@@ -13,6 +13,8 @@ class SudokuSolution {
         $this->setMissingValues();
     }
 
+    public $base_value;
+    public $columns;
     public $counter = 0;
     public $numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
     public $grouping = [
@@ -46,12 +48,12 @@ class SudokuSolution {
     }
 
     function getCommonNumbers($array1, $array2, $array3) {
-        
+
         //echo "Let me show all the arrays: <br /><pre>";
-        /*print_r($array1);
-        print_r($array2);
-        print_r($array3);
-        print_r($this->columns[7]);*/
+        /* print_r($array1);
+          print_r($array2);
+          print_r($array3);
+          print_r($this->columns[7]); */
         $tmp1 = array_merge($array1, $array2);
         //echo "We merged array 1 and 2<br /><pre>";
         $tmp1 = array_unique($tmp1);
@@ -205,6 +207,40 @@ class SudokuSolution {
         return $indexes[$i][$j][$n];
     }
 
+    function getBoxByPosition($position) {
+        $row = $position[0];
+        $column = $position[1];
+
+
+        if ($row < 3 && $column < 3) {
+            return $this->boxes[0][0];
+        }
+        if ($row < 3 && ($column >= 3 && $column < 6)) {
+            return $this->boxes[0][1];
+        }
+        if ($row < 3 && ($column >= 6)) {
+            return $this->boxes[0][2];
+        }
+        if (($row >= 3 && $row < 6) && $column < 3) {
+            return $this->boxes[1][0];
+        }
+        if (($row >= 3 && $row < 6) && ($column >= 3 && $column < 6)) {
+            return $this->boxes[1][1];
+        }
+        if (($row >= 3 && $row < 6) && $column >= 6) {
+            return $this->boxes[1][2];
+        }
+        if ($row >= 6 && $column < 3) {
+            return $this->boxes[2][0];
+        }
+        if ($row >= 6 && ($column >= 3 && $column < 6)) {
+            return $this->boxes[2][1];
+        }
+        if ($row >= 6 && $column >= 6) {
+            return $this->boxes[2][2];
+        }
+    }
+
     function getColumns() {
 
         $this->columns = array();
@@ -236,6 +272,7 @@ class SudokuSolution {
         $this->missing_in_rows = array();
         $this->missing_in_columns = array();
 
+
         foreach ($this->solution as $key1 => $row) {
             foreach ($row as $key2 => $column) {
                 if ($column == 0) {
@@ -245,10 +282,8 @@ class SudokuSolution {
                     else
                         $this->missing_in_rows[$key1] ++;
 
-                    if (!isset($this->missing_in_columns[$key2]))
-                        $this->missing_in_columns[$key2] = 1;
-                    else
-                        $this->missing_in_columns[$key2] ++;
+
+                    $this->missing_in_columns[$key2][] = $key1;
                 }
             }
         }
@@ -263,8 +298,10 @@ class SudokuSolution {
             echo "<br />Hey, you are wrong here for row $row and column $column<br />";
             return;
         }
-        echo "Okay, putting values for $row -- $column and value is $value called from $line and remaining is ".count($this->values_to_find)."<br />";
+        //echo "Okay, putting values for $row -- $column and value is $value called from $line and remaining is " . count($this->values_to_find) . "<br />";
         $this->solution[$row][$column] = $value;
+        $this->getColumns();
+        $this->getBoxes();
         $this->setMissingValues();
     }
 
@@ -279,6 +316,7 @@ class SudokuSolution {
         $this->setSingleValuesRows();
         $this->setSingleValuesColumns();
         $this->setSingleValuesBoxes();
+
 
         if (count($this->values_to_find) == 0) {
             echo "Its solved now<br />";
@@ -316,35 +354,36 @@ class SudokuSolution {
             if ($common_numbers != false)
                 $this->setSolutionValue($r, $c, $common_numbers, __LINE__);
             /*
-            if (!empty($box1)) {
-                $diff3 = array_diff($this->numbers, $box1);
-            }
-            echo "<br />";
+              if (!empty($box1)) {
+              $diff3 = array_diff($this->numbers, $box1);
+              }
+              echo "<br />";
 
-            print_r($diff1);
-            echo "<br />";
-            print_r($diff2);
-            echo "<br />";
-            print_r($diff3);
+              print_r($diff1);
+              echo "<br />";
+              print_r($diff2);
+              echo "<br />";
+              print_r($diff3);
 
 
-            $final_diff = $this->getThreeArrayDiff($diff1, $diff2, $diff3);
-            //          echo "<br />";
-            //        print_r($final_diff);
-            //echo "Remaining values: ";
-            //var_dump(count($this->values_to_find));
-            if (count($final_diff) > 1) {
-                //echo "<br />Not solvable<br />";
-            } else {
-                if (!empty($final_diff)) {
-                    //$this->setSolutionValue($r, $c, $final_diff[0]);
-                    //$this->solution[$r][$c] = $final_diff[0];
-                    $this->setMissingValues();
-                    echo "<br />Success<br />";
-                }
-            }
-            echo "<hr />";*/
+              $final_diff = $this->getThreeArrayDiff($diff1, $diff2, $diff3);
+              //          echo "<br />";
+              //        print_r($final_diff);
+              //echo "Remaining values: ";
+              //var_dump(count($this->values_to_find));
+              if (count($final_diff) > 1) {
+              //echo "<br />Not solvable<br />";
+              } else {
+              if (!empty($final_diff)) {
+              //$this->setSolutionValue($r, $c, $final_diff[0]);
+              //$this->solution[$r][$c] = $final_diff[0];
+              $this->setMissingValues();
+              echo "<br />Success<br />";
+              }
+              }
+              echo "<hr />"; */
         }
+        $this->checkMissingNumberPossibilities();
     }
 
     function doCalculations() {
@@ -357,10 +396,10 @@ class SudokuSolution {
     }
 
     public function validateSeries($series) {
-        
-        
+
+
         $values = array_count_values($series);
-        
+
         foreach ($values as $key => $v) {
             if ($v > 1 && $key != 0) {
                 echo "This is not valid";
@@ -371,21 +410,127 @@ class SudokuSolution {
     }
 
     function validDateSudoku() {
-        
+
         $this->getColumns();
         $this->getBoxes();
         if ($this->validateAllColumns() == FALSE) {
             return false;
         }
-        if($this->validateAllRows()==FALSE) {
+        if ($this->validateAllRows() == FALSE) {
             return false;
         }
-        if($this->validateAllBoxes()==FALSE) {
+        if ($this->validateAllBoxes() == FALSE) {
             return false;
         }
         return true;
-        
-        
+    }
+
+    public function checkMissingNumberPossibilities() {
+        $this->checkMissingNumbersColumns();
+        $this->checkMissingNumbersRows();
+    }
+
+    public function checkMissingNumbersColumns() {
+        //echo "Starting checkMissingNumbersColumns<br />";
+        for ($i = 0; $i < 9; $i++) {
+
+            $column = $this->columns[$i];
+            for ($j = 1; $j <= 9; $j++) {
+                if (!in_array($j, $column)) {
+                    //echo "number $j, column $i and values <br />";
+                    //$this->printa($column);
+                    $this->checkIfPossibeInColumn($j, $i);
+                }
+            }
+        }
+        //echo "<br />checkMissingNumbersColumns ends <br />";
+    }
+
+    public function checkMissingNumbersRows() {
+        for ($i = 0; $i < 9; $i++) {
+            $row = $this->solution[$i];
+            for ($j = 1; $j <= 9; $j++) {
+                if (!in_array($j, $row)) {
+                    $this->checkIfPossibleInRow($j, $i);
+                }
+            }
+        }
+    }
+
+    public function checkIfPossibleInRow($value, $row) {
+        $possibles = 0;
+        $possible_positions = array();
+        for ($i = 0; $i < 9; $i++) {
+            $possibility = $this->checkPossibleAtCell($value, array($row, $i));
+            if ($possibility) {
+                $possibles++;
+                $possible_positions[] = array($row, $i);
+            }
+        }
+        if ($possibles == 1) {
+
+            //echo "Number $value is possible at $possibles place in row $row<br />";
+            $this->setSolutionValue($row, $possible_positions[0][1], $value, __LINE__);
+        }
+    }
+
+    public function checkIfPossibeInColumn($value, $column) {
+        $possibles = 0;
+        $possible_positions = array();
+        for ($i = 0; $i < 9; $i++) {
+            $possibility = $this->checkPossibleAtCell($value, array($i, $column));
+            if ($possibility) {
+                $possibles++;
+                $possible_positions[] = array($i, $column);
+            }
+        }
+        if ($possibles == 1) {
+            //echo "Number $value is possible at $possibles place in column $column<br />";
+            //$this->printa($possible_positions);
+            $this->setSolutionValue($possible_positions[0][0], $column, $value, __LINE__);
+        }
+    }
+
+    public function checkPossibleAtCell($value, $position) {
+
+        $row = $position[0];
+        $column = $position[1];
+
+
+        // check base values
+        if (isset($this->base_value[$row][$column]) && $this->base_value[$row][$column] != 0) {
+            return false;
+        }
+
+        // check for existing value
+        if (isset($this->solution[$row][$column]) && $this->solution[$row][$column] != 0) {
+            return false;
+        }
+        // check in row
+        if (in_array($value, $this->solution[$row])) {
+            return false;
+        }
+        // check column
+        if (in_array($value, $this->columns[$column])) {
+            return false;
+        }
+
+
+        // check boxes
+        $box = $this->getBoxByPosition(array($row, $column));
+
+
+        if (in_array($value, $box))
+            return false;
+
+
+        return true;
+    }
+
+    function printa($array) {
+        echo "<pre>";
+        print_r($array);
+        echo "</pre>";
     }
 
     function validateAllColumns() {
@@ -397,6 +542,7 @@ class SudokuSolution {
         }
         return true;
     }
+
     function validateAllRows() {
         for ($i = 0; $i < 9; $i++) {
             if ($this->validateSeries($this->solution[$i]) == FALSE) {
@@ -406,11 +552,12 @@ class SudokuSolution {
         }
         return true;
     }
+
     function validateAllBoxes() {
-        for($i=0; $i<3; $i++) {
-            for($j=0; $j<3; $j++) {
-                $box=$this->boxes[$i][$j];
-                if($this->validateSeries($box)==FALSE) {
+        for ($i = 0; $i < 3; $i++) {
+            for ($j = 0; $j < 3; $j++) {
+                $box = $this->boxes[$i][$j];
+                if ($this->validateSeries($box) == FALSE) {
                     echo "In Boxes please<br />";
                     return false;
                 }
@@ -424,16 +571,16 @@ class SudokuSolution {
             echo "Solution is not valid";
         }
         ?>
-        <div style="margin-bottom:100px;float: left;">
+        <div style="margin-bottom:200px;float: left;">
             <div style="float: left; width:60px; padding-left: 30px;">
 
                 <table border="1" cellpadding="0" cellspacing="0" style="margin-top:40px;">
 
-                    <?php for ($i = 0; $i < 9; $i++) { ?>
+        <?php for ($i = 0; $i < 9; $i++) { ?>
                         <tr height="50">
                             <td width="20" style="text-align: center;"><?php echo $i; ?></td>
                         </tr>
-                    <?php } ?>
+        <?php } ?>
 
                 </table>
             </div>
@@ -442,7 +589,7 @@ class SudokuSolution {
                     <tr>
                         <?php for ($i = 0; $i < 9; $i++) { ?>
                             <td width="50" style="text-align: center;"><?php echo $i; ?></td>
-                        <?php } ?>
+        <?php } ?>
                     </tr>
                 </table>
                 <br />
@@ -464,11 +611,11 @@ class SudokuSolution {
 
                                 $color = '';
                                 if ($this->base_value[$i][$j] == 0) {
-                                    $color = 'color:brown;';
+                                    $color = 'color:red;';
                                 }
                                 ?>
                                 <td width="50" style="text-align: center; <?php echo $border . $border_bottom . $color; ?>">
-                                    <?php echo ($this->solution[$row][$column] != 0) ? $this->solution[$row][$column] : ''; ?>
+                                <?php echo ($this->solution[$row][$column] != 0) ? $this->solution[$row][$column] : ''; ?>
                                 </td>
                             <?php }
                             ?>
